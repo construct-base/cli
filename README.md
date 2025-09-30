@@ -1,17 +1,63 @@
 # Construct CLI
 
-The official command-line tool for the [Construct Framework](https://github.com/construct-go/core).
+The official command-line tool for the [Construct Framework](https://github.com/construct-base/core).
 
 Construct is a modern full-stack framework combining **Vue 3** (frontend) and **Base Go** (backend) into one cohesive system.
 
 ## Installation
 
-```bash
-# Install globally (macOS/Linux)
-curl -fsSL https://raw.githubusercontent.com/construct-go/cli/main/install.sh | sh
+### Quick Install (Recommended)
 
-# Or build from source
-go install github.com/construct-go/cli@latest
+```bash
+curl -fsSL https://raw.githubusercontent.com/construct-base/cli/main/install.sh | bash
+```
+
+This will:
+- Download the latest CLI binary for your platform
+- Install to `~/.base/bin/construct`
+- Add to your PATH automatically
+
+### Manual Installation
+
+Download the binary for your platform from the [latest release](https://github.com/construct-base/cli/releases/latest):
+
+**macOS (Apple Silicon):**
+```bash
+curl -L https://github.com/construct-base/cli/releases/latest/download/construct-darwin-arm64.tar.gz | tar xz
+mkdir -p ~/.base/bin
+mv construct-darwin-arm64 ~/.base/bin/construct
+chmod +x ~/.base/bin/construct
+echo 'export PATH="$HOME/.base/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**macOS (Intel):**
+```bash
+curl -L https://github.com/construct-base/cli/releases/latest/download/construct-darwin-amd64.tar.gz | tar xz
+mkdir -p ~/.base/bin
+mv construct-darwin-amd64 ~/.base/bin/construct
+chmod +x ~/.base/bin/construct
+echo 'export PATH="$HOME/.base/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Linux (amd64):**
+```bash
+curl -L https://github.com/construct-base/cli/releases/latest/download/construct-linux-amd64.tar.gz | tar xz
+mkdir -p ~/.base/bin
+mv construct-linux-amd64 ~/.base/bin/construct
+chmod +x ~/.base/bin/construct
+echo 'export PATH="$HOME/.base/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/construct-base/cli.git
+cd cli
+go build -o construct main.go
+mv construct ~/.base/bin/
 ```
 
 ## Quick Start
@@ -136,11 +182,17 @@ construct dev
 # - Backend API: http://localhost:8100/api
 ```
 
+## Verify Installation
+
+```bash
+construct --version
+```
+
 ## Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/construct-go/cli.git
+git clone https://github.com/construct-base/cli.git
 cd cli
 
 # Install dependencies
@@ -155,8 +207,8 @@ go build -o construct main.go
 
 ## Related Projects
 
-- [construct-core](https://github.com/construct-go/core) - The Construct framework itself
-- [base-core](https://github.com/base-go/base-core) - The Go backend framework
+- [construct-core](https://github.com/construct-base/core) - The Construct framework itself
+- [Documentation](https://github.com/construct-base/cli) - Full documentation
 
 ## License
 
