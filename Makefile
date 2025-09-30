@@ -3,20 +3,20 @@
 # Build the CLI
 build:
 	@echo "Building construct CLI..."
-	@go build -o construct main.go
-	@echo "✅ Built: ./construct"
+	@go build -o construct-bin main.go
+	@echo "✅ Built: ./construct-bin"
 
 # Install globally
 install:
 	@echo "Installing construct CLI..."
-	@go build -o construct main.go
-	@sudo mv construct /usr/local/bin/construct
+	@go build -o construct-bin main.go
+	@sudo mv construct-bin /usr/local/bin/construct
 	@echo "✅ Installed to /usr/local/bin/construct"
 	@echo "Run 'construct --help' to get started"
 
 # Clean build artifacts
 clean:
-	@rm -f construct
+	@rm -f construct-bin construct/main
 	@echo "✅ Cleaned build artifacts"
 
 # Run tests

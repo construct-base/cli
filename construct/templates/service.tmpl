@@ -1,0 +1,225 @@
+package {{.ModuleName}}
+
+import (
+	"math"
+
+	"base/app/models"
+	"base/core/emitter"
+	"base/core/logger"
+	"base/core/storage"
+	"base/core/types"
+
+	"gorm.io/gorm"
+)
+
+const (
+	Create{{.ResourceName}}Event = "{{.ModuleName}}.create"
+	Update{{.ResourceName}}Event = "{{.ModuleName}}.update"
+	Delete{{.ResourceName}}Event = "{{.ModuleName}}.delete"
+)
+
+type {{.ResourceName}}Service struct {
+	DB      *gorm.DB
+	Emitter *emitter.Emitter
+	Storage *storage.ActiveStorage
+	Logger  logger.Logger
+}
+
+func New{{.ResourceName}}Service(db *gorm.DB, emitter *emitter.Emitter, storage *storage.ActiveStorage, logger logger.Logger) *{{.ResourceName}}Service {
+	return &{{.ResourceName}}Service{
+		DB:      db,
+		Logger:  logger,
+		Emitter: emitter,
+		Storage: storage,
+	}
+}
+
+// applySorting applies sorting to the query based on the sort and order parameters
+func (s *{{.ResourceName}}Service) applySorting(query *gorm.DB, sortBy *string, sortOrder *string) {
+	validSortFields := map[string]string{
+		"id":         "id",
+		"created_at": "created_at",
+		"updated_at": "updated_at",
+		{{range .Fields}}{{if .Sortable}}"{{.Name}}": "{{.Name}}",
+		{{end}}{{end}}
+	}
+
+	defaultSortBy := "id"
+	defaultSortOrder := "desc"
+
+	sortField := defaultSortBy
+	if sortBy != nil && *sortBy != "" {
+		if field, exists := validSortFields[*sortBy]; exists {
+			sortField = field
+		}
+	}
+
+	sortDirection := defaultSortOrder
+	if sortOrder != nil && (*sortOrder == "asc" || *sortOrder == "desc") {
+		sortDirection = *sortOrder
+	}
+
+	query.Order(sortField + " " + sortDirection)
+}
+
+func (s *{{.ResourceName}}Service) Create(req *models.Create{{.ResourceName}}Request) (*models.{{.ResourceName}}, error) {
+	item := &models.{{.ResourceName}}{
+		{{range .Fields}}{{.FieldName}}: req.{{.FieldName}},
+		{{end}}
+	}
+
+	if err := s.DB.Create(item).Error; err != nil {
+		s.Logger.Error("failed to create {{.LowerResourceName}}", logger.String("error", err.Error()))
+		return nil, err
+	}
+
+	s.Emitter.Emit(Create{{.ResourceName}}Event, item)
+
+	return s.GetById(item.Id)
+}
+
+func (s *{{.ResourceName}}Service) Update(id uint, req *models.Update{{.ResourceName}}Request) (*models.{{.ResourceName}}, error) {
+	item := &models.{{.ResourceName}}{}
+	if err := s.DB.First(item, id).Error; err != nil {
+		s.Logger.Error("failed to find {{.LowerResourceName}} for update",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return nil, err
+	}
+
+	if err := Validate{{.ResourceName}}UpdateRequest(req, id); err != nil {
+		return nil, err
+	}
+
+	{{range .Fields}}{{if .IsPointer}}if req.{{.FieldName}} != nil {
+		item.{{.FieldName}} = *req.{{.FieldName}}
+	}
+	{{else}}if req.{{.FieldName}} != {{.ZeroValue}} {
+		item.{{.FieldName}} = req.{{.FieldName}}
+	}
+	{{end}}{{end}}
+
+	if err := s.DB.Save(item).Error; err != nil {
+		s.Logger.Error("failed to update {{.LowerResourceName}}",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return nil, err
+	}
+
+	result, err := s.GetById(item.Id)
+	if err != nil {
+		s.Logger.Error("failed to get updated {{.LowerResourceName}}",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return nil, err
+	}
+
+	s.Emitter.Emit(Update{{.ResourceName}}Event, result)
+
+	return result, nil
+}
+
+func (s *{{.ResourceName}}Service) Delete(id uint) error {
+	item := &models.{{.ResourceName}}{}
+	if err := s.DB.First(item, id).Error; err != nil {
+		s.Logger.Error("failed to find {{.LowerResourceName}} for deletion",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return err
+	}
+
+	if err := s.DB.Delete(item).Error; err != nil {
+		s.Logger.Error("failed to delete {{.LowerResourceName}}",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return err
+	}
+
+	s.Emitter.Emit(Delete{{.ResourceName}}Event, item)
+
+	return nil
+}
+
+func (s *{{.ResourceName}}Service) GetById(id uint) (*models.{{.ResourceName}}, error) {
+	item := &models.{{.ResourceName}}{}
+
+	query := item.Preload(s.DB)
+	if err := query.First(item, id).Error; err != nil {
+		s.Logger.Error("failed to get {{.LowerResourceName}}",
+			logger.String("error", err.Error()),
+			logger.Int("id", int(id)))
+		return nil, err
+	}
+
+	return item, nil
+}
+
+func (s *{{.ResourceName}}Service) GetAll(page *int, limit *int, sortBy *string, sortOrder *string) (*types.PaginatedResponse, error) {
+	var items []*models.{{.ResourceName}}
+	var total int64
+
+	query := s.DB.Model(&models.{{.ResourceName}}{})
+
+	defaultPage := 1
+	defaultLimit := 10
+	if page == nil {
+		page = &defaultPage
+	}
+	if limit == nil {
+		limit = &defaultLimit
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		s.Logger.Error("failed to count {{.ModuleName}}",
+			logger.String("error", err.Error()))
+		return nil, err
+	}
+
+	if page != nil && limit != nil {
+		offset := (*page - 1) * *limit
+		query = query.Offset(offset).Limit(*limit)
+	}
+
+	s.applySorting(query, sortBy, sortOrder)
+
+	if err := query.Find(&items).Error; err != nil {
+		s.Logger.Error("failed to get {{.ModuleName}}",
+			logger.String("error", err.Error()))
+		return nil, err
+	}
+
+	responses := make([]*models.{{.ResourceName}}ListResponse, len(items))
+	for i, item := range items {
+		responses[i] = item.ToListResponse()
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(*limit)))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &types.PaginatedResponse{
+		Data: responses,
+		Pagination: types.Pagination{
+			Total:      int(total),
+			Page:       *page,
+			PageSize:   *limit,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+func (s *{{.ResourceName}}Service) GetAllForSelect() ([]*models.{{.ResourceName}}, error) {
+	var items []*models.{{.ResourceName}}
+
+	query := s.DB.Model(&models.{{.ResourceName}}{})
+	query = query.Select("id, {{.DisplayField}}")
+	query = query.Order("{{.DisplayField}} ASC")
+
+	if err := query.Find(&items).Error; err != nil {
+		s.Logger.Error("Failed to fetch items for select", logger.String("error", err.Error()))
+		return nil, err
+	}
+
+	return items, nil
+}
