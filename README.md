@@ -9,7 +9,7 @@ Construct is a modern full-stack framework combining **Vue 3** (frontend) and **
 ### Quick Install (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/construct-base/cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/construct-base/cli/refs/heads/main/install.sh | bash
 ```
 
 This will:
