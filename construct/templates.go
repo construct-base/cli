@@ -13,3 +13,12 @@ var vueComposableTemplate string
 
 //go:embed templates/frontend/types.ts
 var vueTypesTemplate string
+
+//go:embed templates/frontend/store.ts
+var vueStoreTemplate string
+
+//go:embed templates/frontend/AddModal.vue
+var vueAddModalTemplate string
+
+//go:embed templates/frontend/DeleteModal.vue
+var vueDeleteModalTemplate string

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { apiClient } from '@core/api/client'
-import type { {{.ResourceName}}, {{.ResourceName}}CreateRequest, {{.ResourceName}}UpdateRequest } from '@/types/{{.LowerResourceName}}'
+import { apiClient } from '~/core/api/client'
+import type { {{.ResourceName}}, {{.ResourceName}}CreateRequest, {{.ResourceName}}UpdateRequest } from '../types'
 
 export function use{{.PluralName}}() {
   const {{.LowerPluralName}} = ref<{{.ResourceName}}[]>([])

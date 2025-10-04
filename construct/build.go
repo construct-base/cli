@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/spf13/cobra"
+	"github.com/base-go/mamba"
 )
 
-var buildCmd = &cobra.Command{
+var buildCmd = &mamba.Command{
 	Use:   "build",
 	Short: "Build production app",
 	Long:  "Build Vue SPA and compile Go binary into dist/ directory for production deployment",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *mamba.Command, args []string) {
 		runBuild()
 	},
 }

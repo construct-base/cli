@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
+	"github.com/base-go/mamba"
 )
 
-var newCmd = &cobra.Command{
+var newCmd = &mamba.Command{
 	Use:   "new [project_name]",
 	Short: "Create a new Construct project",
 	Long: `Create a new Construct project by cloning the framework and setting up the directory.
@@ -23,15 +23,16 @@ This will clone the latest Construct framework and set up a new project with:
 Example:
   construct new my-blog
   construct new ecommerce-app`,
-	Args: cobra.ExactArgs(1),
-	Run:  runNewProject,
+	Run: func(cmd *mamba.Command, args []string) {
+		if len(args) != 1 {
+			cmd.Help()
+			os.Exit(1)
+		}
+		runNewProject(cmd, args)
+	},
 }
 
-func init() {
-	rootCmd.AddCommand(newCmd)
-}
-
-func runNewProject(cmd *cobra.Command, args []string) {
+func runNewProject(cmd *mamba.Command, args []string) {
 	projectName := args[0]
 
 	printBanner()

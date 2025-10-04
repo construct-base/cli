@@ -3,12 +3,12 @@ package construct
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
+	"github.com/base-go/mamba"
 )
 
 const version = "1.0.0"
 
-var rootCmd = &cobra.Command{
+var rootCmd = &mamba.Command{
 	Use:   "construct",
 	Short: "Construct - Full-stack Vue + Go framework",
 	Long: `Construct CLI - A modern full-stack framework combining Vue 3 and Base Go.
@@ -19,9 +19,27 @@ Build powerful web applications with the best of both worlds:
 
 One framework. One command. One binary.`,
 	Version: version,
+	RunE: func(cmd *mamba.Command, args []string) error {
+		// Check if help flag was passed
+		help, _ := cmd.Flags().GetBool("help")
+		if help {
+			printBanner()
+			fmt.Println()
+			return cmd.Help()
+		}
+
+		// Default behavior: show help
+		printBanner()
+		fmt.Println()
+		return cmd.Help()
+	},
 }
 
 func init() {
+	// Disable default help flag to use Mamba's help system
+	rootCmd.Flags().BoolP("help", "h", false, "help for construct")
+
+	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(devCmd)
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(startCmd)

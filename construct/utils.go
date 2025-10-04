@@ -38,14 +38,30 @@ func fileExists(path string) bool {
 
 // detectPackageManager detects which package manager to use
 func detectPackageManager(dir, script string) *exec.Cmd {
-	if fileExists(filepath.Join(dir, "bun.lockb")) {
+	// Special handling for install command (no "run" prefix needed)
+	isInstall := script == "install"
+
+	if fileExists(filepath.Join(dir, "bun.lockb")) || fileExists(filepath.Join(dir, "bun.lock")) {
+		if isInstall {
+			return exec.Command("bun", "install")
+		}
 		return exec.Command("bun", "run", script)
 	}
 	if fileExists(filepath.Join(dir, "pnpm-lock.yaml")) {
+		if isInstall {
+			return exec.Command("pnpm", "install")
+		}
 		return exec.Command("pnpm", script)
 	}
 	if fileExists(filepath.Join(dir, "yarn.lock")) {
+		if isInstall {
+			return exec.Command("yarn", "install")
+		}
 		return exec.Command("yarn", script)
+	}
+	// Default to npm
+	if isInstall {
+		return exec.Command("npm", "install")
 	}
 	return exec.Command("npm", "run", script)
 }
@@ -86,8 +102,59 @@ func (pw *PrefixWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// unzip extracts a zip archive to a destination directory
-func unzip(src, dest string) error {
+// FilteredWriter filters output based on keywords
+type FilteredWriter struct {
+	prefix   string
+	writer   *os.File
+	buffer   []byte
+	keywords []string
+}
+
+// NewFilteredWriter creates a new FilteredWriter that only shows lines containing keywords
+func NewFilteredWriter(writer *os.File, prefix string, keywords []string) *FilteredWriter {
+	return &FilteredWriter{
+		prefix:   prefix,
+		writer:   writer,
+		buffer:   make([]byte, 0),
+		keywords: keywords,
+	}
+}
+
+// Write implements io.Writer interface with filtering
+func (fw *FilteredWriter) Write(p []byte) (n int, err error) {
+	fw.buffer = append(fw.buffer, p...)
+
+	// Process complete lines
+	for {
+		idx := strings.IndexByte(string(fw.buffer), '\n')
+		if idx == -1 {
+			break
+		}
+
+		line := string(fw.buffer[:idx])
+		fw.buffer = fw.buffer[idx+1:]
+
+		// Check if line contains any keyword
+		shouldShow := false
+		for _, keyword := range fw.keywords {
+			if strings.Contains(line, keyword) {
+				shouldShow = true
+				break
+			}
+		}
+
+		if shouldShow {
+			fw.writer.WriteString(fw.prefix)
+			fw.writer.WriteString(line)
+			fw.writer.WriteString("\n")
+		}
+	}
+
+	return len(p), nil
+}
+
+// Unzip extracts a zip archive to a destination directory
+func Unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
 		return err
@@ -137,4 +204,24 @@ func unzip(src, dest string) error {
 	}
 
 	return nil
+}
+
+// pluralize converts a word to plural form (simple implementation)
+func pluralize(word string) string {
+	if strings.HasSuffix(word, "s") || strings.HasSuffix(word, "x") ||
+		strings.HasSuffix(word, "ch") || strings.HasSuffix(word, "sh") {
+		return word + "es"
+	}
+	if strings.HasSuffix(word, "y") {
+		return word[:len(word)-1] + "ies"
+	}
+	return word + "s"
+}
+
+// titleCase converts first letter to uppercase
+func titleCase(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/spf13/cobra"
+	"github.com/base-go/mamba"
 )
 
-var startCmd = &cobra.Command{
+var startCmd = &mamba.Command{
 	Use:   "start",
 	Short: "Start production server",
 	Long:  "Start the production server (requires running 'construct build' first)",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *mamba.Command, args []string) {
 		runStart()
 	},
 }
